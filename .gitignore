@@ -1,0 +1,5 @@
+btcwallet
+.data
+.env
+.test
+.vscode
