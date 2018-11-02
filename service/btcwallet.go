@@ -86,7 +86,6 @@ func AddAccount(name string, net string) {
 		Name:   name,
 		Index4: index4,
 	})
-	log.Println(err)
 
 	key, err := db.GetKey(
 		0,
@@ -105,8 +104,45 @@ func AddAccount(name string, net string) {
 
 	accountExKey, err := exKey.Child(hdkeychain.HardenedKeyStart + index4)
 	accountKey := createKey(net, 0, []uint32{0, hdkeychain.HardenedKeyStart + 44, hdkeychain.HardenedKeyStart + util.IndexFromNet[net], hdkeychain.HardenedKeyStart + index4}, accountExKey)
-
 	err = db.SaveKey(&accountKey)
+
+	pubAccountKey, err := accountExKey.Neuter()
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+
+	externalExKey, err := pubAccountKey.Child(0)
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+	externalKey := createKey(
+		net,
+		1,
+		[]uint32{0, hdkeychain.HardenedKeyStart + 44, hdkeychain.HardenedKeyStart + util.IndexFromNet[net], hdkeychain.HardenedKeyStart + index4, 0},
+		externalExKey)
+	err = db.SaveKey(&externalKey)
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+
+	internalExKey, err := pubAccountKey.Child(1)
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+	internalKey := createKey(
+		net,
+		1,
+		[]uint32{0, hdkeychain.HardenedKeyStart + 44, hdkeychain.HardenedKeyStart + util.IndexFromNet[net], hdkeychain.HardenedKeyStart + index4, 1},
+		internalExKey)
+	err = db.SaveKey(&internalKey)
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
 }
 
 func createKey(
