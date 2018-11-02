@@ -23,13 +23,18 @@ var (
 	SeedFilePath string
 	// DbFilePath is db for extend private & public key
 	DbFilePath string
-)
+	// IndexFromNet is index from btc network. It is declared in BIP0044
+	IndexFromNet = map[string]uint32{
+		main: 0,
+		test: 1,
+	}
 
-// IndexFromNet is index from btc network. It is declared in BIP0044
-var IndexFromNet = map[string]uint32{
-	main: 0,
-	test: 1,
-}
+	// ParamsFromNet is index from btc network. It is declared in BIP0044
+	ParamsFromNet = map[string]*chaincfg.Params{
+		main: &chaincfg.MainNetParams,
+		test: &chaincfg.TestNet3Params,
+	}
+)
 
 // GetNetParams get net params by string
 func GetNetParams(net string) (*chaincfg.Params, error) {

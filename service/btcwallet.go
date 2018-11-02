@@ -51,7 +51,6 @@ func Initialize(net string) {
 		log.Fatalln(err)
 		return
 	}
-	log.Println("latest private key depth is " + (string)(mPriv3.Depth()))
 
 	// save seed
 	err = fs.SaveSeed(seed)
@@ -106,13 +105,19 @@ func AddAccount(name string, net string) {
 	accountKey := createKey(net, 0, []uint32{0, hdkeychain.HardenedKeyStart + 44, hdkeychain.HardenedKeyStart + util.IndexFromNet[net], hdkeychain.HardenedKeyStart + index4}, accountExKey)
 	err = db.SaveKey(&accountKey)
 
-	pubAccountKey, err := accountExKey.Neuter()
+	pubAccountExKey, err := accountExKey.Neuter()
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+	pubAccountKey := createKey(net, 1, []uint32{0, hdkeychain.HardenedKeyStart + 44, hdkeychain.HardenedKeyStart + util.IndexFromNet[net], hdkeychain.HardenedKeyStart + index4}, pubAccountExKey)
+	err = db.SaveKey(&pubAccountKey)
 	if err != nil {
 		log.Fatalln(err)
 		return
 	}
 
-	externalExKey, err := pubAccountKey.Child(0)
+	externalExKey, err := pubAccountExKey.Child(0)
 	if err != nil {
 		log.Fatalln(err)
 		return
@@ -120,7 +125,12 @@ func AddAccount(name string, net string) {
 	externalKey := createKey(
 		net,
 		1,
-		[]uint32{0, hdkeychain.HardenedKeyStart + 44, hdkeychain.HardenedKeyStart + util.IndexFromNet[net], hdkeychain.HardenedKeyStart + index4, 0},
+		[]uint32{
+			0,
+			hdkeychain.HardenedKeyStart + 44,
+			hdkeychain.HardenedKeyStart + util.IndexFromNet[net],
+			hdkeychain.HardenedKeyStart + index4,
+			0},
 		externalExKey)
 	err = db.SaveKey(&externalKey)
 	if err != nil {
@@ -128,7 +138,7 @@ func AddAccount(name string, net string) {
 		return
 	}
 
-	internalExKey, err := pubAccountKey.Child(1)
+	internalExKey, err := pubAccountExKey.Child(1)
 	if err != nil {
 		log.Fatalln(err)
 		return
@@ -136,13 +146,69 @@ func AddAccount(name string, net string) {
 	internalKey := createKey(
 		net,
 		1,
-		[]uint32{0, hdkeychain.HardenedKeyStart + 44, hdkeychain.HardenedKeyStart + util.IndexFromNet[net], hdkeychain.HardenedKeyStart + index4, 1},
+		[]uint32{
+			0,
+			hdkeychain.HardenedKeyStart + 44,
+			hdkeychain.HardenedKeyStart + util.IndexFromNet[net],
+			hdkeychain.HardenedKeyStart + index4,
+			1},
 		internalExKey)
 	err = db.SaveKey(&internalKey)
 	if err != nil {
 		log.Fatalln(err)
 		return
 	}
+}
+
+// Receive create receive address
+func Receive(name string, net string, index6 uint32) (string, error) {
+	return getAddress(name, net, 0, index6)
+}
+
+// Change create Change address
+func Change(name string, net string, index6 uint32) (string, error) {
+	return getAddress(name, net, 1, index6)
+}
+
+func getAddress(name string, net string, index5 uint32, index6 uint32) (string, error) {
+	account, err := db.GetAccount(name)
+	if err != nil {
+		log.Fatalln(err)
+		return "", err
+	}
+
+	key, err := db.GetKey(
+		0,
+		1,
+		[]uint32{
+			0,
+			hdkeychain.HardenedKeyStart + 44,
+			hdkeychain.HardenedKeyStart + util.IndexFromNet[net],
+			hdkeychain.HardenedKeyStart + account.Index4,
+			index5,
+			math.MaxUint32,
+		},
+	)
+
+	pubAccountExKey, err := hdkeychain.NewKeyFromString(key.Value)
+	if err != nil {
+		log.Fatalln(err)
+		return "", err
+	}
+
+	receiveKey, err := pubAccountExKey.Child(index6)
+	if err != nil {
+		log.Fatalln(err)
+		return "", err
+	}
+
+	address, err := receiveKey.Address(util.ParamsFromNet[net])
+	if err != nil {
+		log.Fatalln(err)
+		return "", err
+	}
+
+	return address.String(), nil
 }
 
 func createKey(

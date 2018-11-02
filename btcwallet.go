@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"github.com/winor30/btc-wallet-test/service"
 	"log"
 	"os"
+	"strconv"
 )
 
 func initialize() {
@@ -25,9 +27,30 @@ func account() {
 		name := os.Args[3]
 		net := os.Args[4]
 		service.AddAccount(name, net)
+	}
+}
 
+func address() {
+	if len(os.Args) < 3 {
+		log.Fatalln("account command is invalid!")
 	}
 
+	switch os.Args[2] {
+	case "receive":
+		name := os.Args[3]
+		net := os.Args[4]
+		i, _ := strconv.Atoi(os.Args[5])
+		index6 := uint32(i)
+		address, _ := service.Receive(name, net, index6)
+		fmt.Println(address)
+	case "change":
+		name := os.Args[3]
+		net := os.Args[4]
+		i, _ := strconv.Atoi(os.Args[5])
+		index6 := uint32(i)
+		address, _ := service.Change(name, net, index6)
+		fmt.Println(address)
+	}
 }
 
 func main() {
@@ -42,5 +65,7 @@ func main() {
 		initialize()
 	case "account":
 		account()
+	case "address":
+		address()
 	}
 }

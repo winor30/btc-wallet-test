@@ -197,11 +197,9 @@ func fillMaxUint32(indexes *([]uint32)) {
 
 // GetNewestIndexForAccount get index for account in order to create new account
 func GetNewestIndexForAccount() uint32 {
-	accounts, err := queryAccount(`
+	accounts, _ := queryAccount(`
 		SELECT name, max(index4) from accounts;
 	`)
-
-	log.Println(accounts, err)
 
 	if len(accounts) != 0 && accounts[0] != entity.NullAccount {
 		return accounts[0].Index4 + 1
@@ -223,4 +221,15 @@ func SaveAccount(account entity.Account) error {
 
 	_, err := exec(query)
 	return err
+}
+
+// GetAccount get account
+func GetAccount(name string) (entity.Account, error) {
+	query := fmt.Sprintf(`
+		SELECT name, index4 from accounts WHERE name = '%s';`,
+		name,
+	)
+
+	accounts, err := queryAccount(query)
+	return accounts[0], err
 }
